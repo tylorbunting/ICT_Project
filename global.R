@@ -2,21 +2,27 @@
 
 
 
+
+
 library(shinydashboard) # structuring UI
 library(shiny)          # base shiny package
 library(tm)             # text mining
 library(wordcloud)      # making awesome wordclouds
 library(memoise)        # memoization package
-library(RColorBrewer)   # making made plots
+library(RColorBrewer)   # making awesome plots
+library(ggplot2)        # also for making awesome plots
+library(plyr)           # rbind(ing) lists of dataframes for the check box, time series plot
 
 ###################################################################################################################################
 
 #### Make sure to have the 'twoThousandJobs.csv' file in your project directory. This is the source dataset that we import into the working environment using the below code
+
 df_twoThousandJobs <-
   read.csv("twoThousandJobs.csv",
            stringsAsFactors = FALSE)
 
 # clean the date column so that it can be represented as a DATE. This will enable R to interpret it for time relevant analysis
+
 df_twoThousandJobs$Date <-
   sub("categorized-", "", df_twoThousandJobs$Date)
 df_twoThousandJobs$Date <- as.Date(df_twoThousandJobs$Date)
@@ -49,10 +55,54 @@ df_testingJobs <-
   subset(df_twoThousandJobs,
          df_twoThousandJobs$Classification == " Testing and Quality")
 
-#####################The below code is for generating plot that displays most commonly occuring classification
+
+
+######################################################################
+
+###The below code is used to import data for time series plot
+
+#import time series specific dataset and clean it
+
+df_timeSeriesJobs <-
+  read.csv("timeSeriesJobs.csv",
+           stringsAsFactors = FALSE)
+df_timeSeriesJobs$Date <- as.Date(df_timeSeriesJobs$Date)
+df_timeSeriesJobs$Classification <-
+  as.factor(df_timeSeriesJobs$Classification)
+
+#make frequency timeSeriesJobs data frame and then the timeSeriesJobs xts data type for plotting
+
+freq_timeSeriesJobs <- df_timeSeriesJobs[, 2:3]
+freq_timeSeriesJobs$Date <- as.character(freq_timeSeriesJobs$Date)
+freq_timeSeriesJobs$Date <-
+  print(sub("........", "20", freq_timeSeriesJobs$Date))
+freq_timeSeriesJobs <-
+  print(data.frame(table(
+    freq_timeSeriesJobs$Date,
+    freq_timeSeriesJobs$Classification
+  )))
+colnames(freq_timeSeriesJobs) <-
+  c("Date", "Classification", "Frequency")
+
+
+# Subsetting the Jobs by there classifications (e.g. Developer, Business Analyst and Consultant) for job freqency with dates data.frames
+
+freq_developerJobs <- freq_timeSeriesJobs[freq_timeSeriesJobs$Classification == "Developer",]
+freq_architectsJobs <- freq_timeSeriesJobs[freq_timeSeriesJobs$Classification == "Architects",]
+freq_databaseJobs <- freq_timeSeriesJobs[freq_timeSeriesJobs$Classification == "Database Development",]
+freq_engineeringJobs <- freq_timeSeriesJobs[freq_timeSeriesJobs$Classification == "Engineering",]
+freq_securityJobs <- freq_timeSeriesJobs[freq_timeSeriesJobs$Classification == "Security",]
+freq_telecomJobs <- freq_timeSeriesJobs[freq_timeSeriesJobs$Classification == "Telecommunications",]
+freq_testingJobs <- freq_timeSeriesJobs[freq_timeSeriesJobs$Classification == "Testing and Quality",]
+
+
+####################################################################################
+
+########The below code is for generating plot that displays most commonly occuring classification
 ########This shows us job markets in demand
 
 #get only IT categories by binding all of the already subsetted classifications
+
 df_ITIJobs <- rbind(
   #df_administrationJobs,
   df_architectsJobs,
@@ -69,6 +119,7 @@ df_ITIJobs <- rbind(
 )
 
 #The below code makes the list that is needed for the word cloud communication between UI, Server and Global .R files
+
 ls_ITIJobs <- list(
   "df_ITIJobs" = df_ITIJobs,
   #df_administrationJobs,
@@ -86,6 +137,7 @@ ls_ITIJobs <- list(
 )
 
 #change the appropriate characters into factors so that the "levels" can be represented
+
 df_ITIJobs$Classification = as.factor(df_ITIJobs$Classification)
 df_ITIJobs$Level = as.factor(df_ITIJobs$Level)
 df_ITIJobs$JobType = as.factor(df_ITIJobs$JobType)
@@ -95,9 +147,12 @@ df_ITIJobs$JobType = as.factor(df_ITIJobs$JobType)
 
 ###########################################################################################################################
 
+#### The below code is used to generate the word cloud
+
 # List of valid classifications to select from
+
 classifications <- list(
-  "All IT Jobs" = "df_ITIJobs",
+  "Information Technology Industry Jobs" = "df_ITIJobs",
   "- IT Architect Jobs" = "df_architectsJobs",
   "- Database Developer Jobs" = "df_databaseJobs",
   "- Software Developer Jobs" = "df_developerJobs",
@@ -108,11 +163,14 @@ classifications <- list(
 )
 
 # using "memoise" to automatically cache results
-getTermMatrix <- memoise(function(classification) {
+
+getTermMatrix <- memoise(function(classification)
+{
   df_source <- as.vector(ls_ITIJobs[[classification]][8])
   df_source <- VectorSource(df_source)
   df_corpus <- VCorpus(df_source)
-  clean_corpus <- function(corpus) {
+  clean_corpus <- function(corpus)
+  {
     corpus <- tm_map(corpus, content_transformer(tolower))
     corpus <- tm_map(corpus, removePunctuation)
     corpus <- tm_map(corpus, removeNumbers)
@@ -143,14 +201,19 @@ getTermMatrix <- memoise(function(classification) {
     return(corpus)
   }
   df_corpus <- clean_corpus(df_corpus)
+  
   # The Term Document matrix is then created using the below code
+  
   tdm_JobandSkills <-
     TermDocumentMatrix(df_corpus, control = list(minWordLength = 1))
+  
   # The Term Document is turned into a matrix and sorted into decreasing order using the below code
+  
   m_JobandSkills <- as.matrix(tdm_JobandSkills)
   term_freq_JobandSkills <- rowSums(m_JobandSkills)
   term_freq_JobandSkills <-
     sort(term_freq_JobandSkills, decreasing = TRUE)
+  
   # word_freq <- data.frame(term = names(term_freq_JobandSkills), num = term_freq_JobandSkills)
   
   
