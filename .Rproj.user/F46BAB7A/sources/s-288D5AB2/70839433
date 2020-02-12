@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1547466424919.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "3247569186",
+    "id" : "70839433",
+    "lastKnownWriteTime" : 1547466272,
+    "last_content_update" : 1547533652536,
+    "path" : "~/GitHub/ICT_Project/ui.R",
+    "project_path" : "ui.R",
+    "properties" : {
+        "cursorPosition" : "91,37",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
